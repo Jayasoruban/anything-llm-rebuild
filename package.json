@@ -1,0 +1,21 @@
+{
+  "name": "anything-llm-rebuild",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "A from-scratch rebuild of AnythingLLM to learn production-grade LLM systems",
+  "author": "Jayasoruban R",
+  "workspaces": [
+    "server",
+    "collector",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:server": "yarn workspace anything-llm-server dev",
+    "dev:collector": "yarn workspace anything-llm-collector dev",
+    "dev:frontend": "yarn workspace anything-llm-frontend dev"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

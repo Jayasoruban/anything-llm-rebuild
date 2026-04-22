@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.yarn/
+.pnp.*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+.next/
+.vite/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Databases (Phase 1+)
+server/storage/
+server/prisma/dev.db
+server/prisma/dev.db-journal
+*.sqlite
+*.sqlite3
+
+# Uploads / temp (Phase 4+)
+collector/hotdir/
+collector/storage/
+server/storage/documents/
+server/storage/vector-cache/
+server/storage/models/
+
+# Misc
+*.tsbuildinfo
+coverage/
