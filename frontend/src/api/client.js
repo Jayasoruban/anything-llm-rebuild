@@ -46,6 +46,14 @@ export const authApi = {
   me: () => api.get("/auth/me"),
 };
 
+export const settingsApi = {
+  getLLM: () => api.get("/system-settings/llm-provider"),
+  saveLLM: ({ provider, apiKey, model }) =>
+    api.post("/system-settings/llm-provider", { provider, apiKey, model }),
+  testLLM: ({ provider, apiKey, model }) =>
+    api.post("/system-settings/llm-provider/test", { provider, apiKey, model }),
+};
+
 export const chatApi = {
   getHistory: (slug) => api.get(`/workspace/${slug}/chats`),
   send: (slug, message) => api.post(`/workspace/${slug}/chat`, { message }),

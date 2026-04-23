@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import ChatContainer from "./ChatContainer";
 
@@ -25,6 +25,15 @@ export default function WorkspaceChat({ slug }) {
             {user?.username}{" "}
             <span className="text-slate-600">({user?.role})</span>
           </span>
+          {user?.role === "admin" && (
+            <Link
+              to="/settings/llm"
+              className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 transition"
+              title="LLM settings"
+            >
+              ⚙ Settings
+            </Link>
+          )}
           <button
             onClick={handleLogout}
             className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 transition"

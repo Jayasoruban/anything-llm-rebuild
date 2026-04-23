@@ -3,6 +3,7 @@ import { useAuth } from "./contexts/AuthContext";
 import Setup from "./pages/Setup";
 import Login from "./pages/Login";
 import Workspace from "./pages/Workspace";
+import LLMPreference from "./pages/Settings/LLMPreference";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const PublicOnly = ({ children }) => {
@@ -47,6 +48,15 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/settings/llm"
+        element={
+          <ProtectedRoute>
+            <LLMPreference />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/" element={<Navigate to="/workspace/default" replace />} />
       <Route path="*" element={<Navigate to="/workspace/default" replace />} />
     </Routes>
   );

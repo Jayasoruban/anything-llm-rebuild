@@ -39,7 +39,7 @@ const chatEndpoints = (app) => {
         { role: "user", content: message },
       ];
 
-      const provider = getProvider();
+      const provider = await getProvider();
       const response = await provider.sendChat(messages);
 
       const saved = await WorkspaceChats.addChat({
@@ -108,7 +108,7 @@ const chatEndpoints = (app) => {
         { role: "user", content: message },
       ];
 
-      const provider = getProvider();
+      const provider = await getProvider();
       let full = "";
       let aborted = false;
 

@@ -13,6 +13,7 @@ const { Workspace } = require("./models/workspace");
 const { setupEndpoints } = require("./endpoints/setup");
 const { authEndpoints } = require("./endpoints/auth");
 const { chatEndpoints } = require("./endpoints/chat");
+const { systemSettingsEndpoints } = require("./endpoints/systemSettings");
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
@@ -38,6 +39,7 @@ app.get("/api/health", (req, res) => {
 setupEndpoints(app);
 authEndpoints(app);
 chatEndpoints(app);
+systemSettingsEndpoints(app);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Not found", path: req.path });

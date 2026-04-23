@@ -16,6 +16,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@google/genai": "^1.50.1",
     "@prisma/client": "^6.16.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",

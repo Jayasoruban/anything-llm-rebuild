@@ -43,6 +43,14 @@ const validatedRequest = async (req, res, next) => {
   }
 };
 
+// Chain AFTER validatedRequest — refuses non-admin users with 403.
+const requireAdmin = (req, res, next) => {
+  if (req.user?.role !== "admin") {
+    return res.status(403).json({ error: "admin role required" });
+  }
+  next();
+};
+
 // Return a safe user object (never leak the password hash).
 const publicUser = (user) => ({
   id: user.id,
@@ -56,5 +64,6 @@ module.exports = {
   verifyPassword,
   signToken,
   validatedRequest,
+  requireAdmin,
   publicUser,
 };
