@@ -1,27 +1,53 @@
-import { useEffect, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
+import Setup from "./pages/Setup";
+import Login from "./pages/Login";
+import Workspace from "./pages/Workspace";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+const PublicOnly = ({ children }) => {
+  const { user, needsSetup, loading } = useAuth();
+  if (loading) return null;
+  if (needsSetup) return <Navigate to="/setup" replace />;
+  if (user) return <Navigate to="/workspace/default" replace />;
+  return children;
+};
+
+const SetupOnly = ({ children }) => {
+  const { needsSetup, loading } = useAuth();
+  if (loading) return null;
+  if (!needsSetup) return <Navigate to="/login" replace />;
+  return children;
+};
 
 export default function App() {
-  const [serverStatus, setServerStatus] = useState("checking…");
-
-  useEffect(() => {
-    fetch("/api/ping")
-      .then((r) => r.json())
-      .then((d) => setServerStatus(d.online ? "online" : "offline"))
-      .catch(() => setServerStatus("unreachable"));
-  }, []);
-
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight">
-          AnythingLLM Rebuild
-        </h1>
-        <p className="text-slate-400">Phase 0 — Walking Skeleton</p>
-        <p className="text-sm">
-          Server status:{" "}
-          <span className="font-mono text-sky-400">{serverStatus}</span>
-        </p>
-      </div>
-    </div>
+    <Routes>
+      <Route
+        path="/setup"
+        element={
+          <SetupOnly>
+            <Setup />
+          </SetupOnly>
+        }
+      />
+      <Route
+        path="/login"
+        element={
+          <PublicOnly>
+            <Login />
+          </PublicOnly>
+        }
+      />
+      <Route
+        path="/workspace/:slug"
+        element={
+          <ProtectedRoute>
+            <Workspace />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/workspace/default" replace />} />
+    </Routes>
   );
 }

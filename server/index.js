@@ -9,16 +9,18 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const logger = require("./utils/logger");
+const { Workspace } = require("./models/workspace");
+const { setupEndpoints } = require("./endpoints/setup");
+const { authEndpoints } = require("./endpoints/auth");
+const { chatEndpoints } = require("./endpoints/chat");
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
 
-// -------- Middleware --------
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// -------- Routes (Phase 0) --------
 app.get("/api/ping", (req, res) => {
   res.json({ online: true });
 });
@@ -33,12 +35,20 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// -------- 404 fallback --------
+setupEndpoints(app);
+authEndpoints(app);
+chatEndpoints(app);
+
 app.use((req, res) => {
   res.status(404).json({ error: "Not found", path: req.path });
 });
 
-// -------- Start --------
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  try {
+    await Workspace.ensureDefault();
+    logger.info("✓ default workspace ready");
+  } catch (err) {
+    logger.error(`failed to seed default workspace: ${err.message}`);
+  }
   logger.info(`✓ server listening on http://localhost:${PORT}`);
 });

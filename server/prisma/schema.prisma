@@ -1,0 +1,60 @@
+// Prisma schema — defines the database shape for anything-llm-rebuild.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../storage/anythingllm.db"
+}
+
+// Who can log into the app. First user registered becomes the admin.
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  role      String   @default("default")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chats WorkspaceChat[]
+}
+
+// Global app settings (key-value store).
+// Examples: has_setup_completed, jwt_secret.
+model SystemSettings {
+  id        Int      @id @default(autoincrement())
+  label     String   @unique
+  value     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A chat container. One workspace groups many related Q&A pairs.
+// Phase 1 uses a single seeded "default" workspace.
+model Workspace {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chats WorkspaceChat[]
+}
+
+// One row = one Q&A pair (user prompt + assistant response).
+model WorkspaceChat {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  userId      Int?
+  prompt      String
+  response    String
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+}
