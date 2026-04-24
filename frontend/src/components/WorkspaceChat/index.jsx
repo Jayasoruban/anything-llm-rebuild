@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import ChatContainer from "./ChatContainer";
+import DocumentPanel from "./DocumentPanel";
 
-// Shell that wraps a single workspace: top header + chat area.
+// Shell that wraps a single workspace: top header + chat area + document side panel.
 export default function WorkspaceChat({ slug }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [showDocs, setShowDocs] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -25,6 +28,16 @@ export default function WorkspaceChat({ slug }) {
             {user?.username}{" "}
             <span className="text-slate-600">({user?.role})</span>
           </span>
+          <button
+            onClick={() => setShowDocs((v) => !v)}
+            className={`px-3 py-1.5 rounded transition ${
+              showDocs
+                ? "bg-sky-700 text-white"
+                : "bg-slate-800 hover:bg-slate-700"
+            }`}
+          >
+            📄 Documents
+          </button>
           {user?.role === "admin" && (
             <Link
               to="/settings/llm"
@@ -42,7 +55,16 @@ export default function WorkspaceChat({ slug }) {
           </button>
         </div>
       </header>
-      <ChatContainer slug={slug} />
+
+      {/* Main area: chat on left, document panel slides in on right */}
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden">
+          <ChatContainer slug={slug} />
+        </div>
+        {showDocs && (
+          <DocumentPanel slug={slug} onClose={() => setShowDocs(false)} />
+        )}
+      </div>
     </div>
   );
 }

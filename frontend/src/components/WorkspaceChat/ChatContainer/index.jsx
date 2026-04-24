@@ -49,6 +49,7 @@ export default function ChatContainer({ slug }) {
             prompt: message,
             response: evt.response,
             createdAt: evt.createdAt,
+            sources: evt.sources ?? [],
           },
         ]);
         setPendingPrompt(null);

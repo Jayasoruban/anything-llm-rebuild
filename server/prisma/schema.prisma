@@ -41,7 +41,25 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  chats WorkspaceChat[]
+  chats     WorkspaceChat[]
+  documents WorkspaceDocument[]
+}
+
+// One row = one uploaded document (metadata only — vectors live in LanceDB).
+// docId links SQL metadata ↔ LanceDB vector rows for the same document.
+model WorkspaceDocument {
+  id          Int       @id @default(autoincrement())
+  workspaceId Int
+  docId       String    @unique   // uuid generated at upload time
+  title       String              // original filename
+  mimeType    String
+  wordCount   Int
+  chunkCount  Int
+  createdAt   DateTime  @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 // One row = one Q&A pair (user prompt + assistant response).

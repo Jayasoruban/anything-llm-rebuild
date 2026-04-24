@@ -60,6 +60,8 @@ const SETTINGS = {
   OPENAI_MODEL: "llm_openai_model",
   GEMINI_API_KEY: "llm_gemini_api_key",
   GEMINI_MODEL: "llm_gemini_model",
+  EMBEDDING_PROVIDER: "embedding_provider",
+  EMBEDDING_MODEL: "embedding_model",
 };
 
 module.exports = { SystemSettings, SETUP_COMPLETE_KEY, SETTINGS };

@@ -46,6 +46,26 @@ export const authApi = {
   me: () => api.get("/auth/me"),
 };
 
+export const documentApi = {
+  list: (slug) => api.get(`/workspace/${slug}/documents`),
+  remove: (slug, docId) => api.del(`/workspace/${slug}/document/${docId}`),
+
+  // File upload — uses raw fetch (not our api helper) because it's multipart.
+  upload: async (slug, file) => {
+    const token = Token.get();
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch(`/api/workspace/${slug}/upload`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+    return data;
+  },
+};
+
 export const settingsApi = {
   getLLM: () => api.get("/system-settings/llm-provider"),
   saveLLM: ({ provider, apiKey, model }) =>

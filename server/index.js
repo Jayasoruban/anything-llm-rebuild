@@ -14,6 +14,7 @@ const { setupEndpoints } = require("./endpoints/setup");
 const { authEndpoints } = require("./endpoints/auth");
 const { chatEndpoints } = require("./endpoints/chat");
 const { systemSettingsEndpoints } = require("./endpoints/systemSettings");
+const { documentEndpoints } = require("./endpoints/document");
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
@@ -40,6 +41,7 @@ setupEndpoints(app);
 authEndpoints(app);
 chatEndpoints(app);
 systemSettingsEndpoints(app);
+documentEndpoints(app);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Not found", path: req.path });

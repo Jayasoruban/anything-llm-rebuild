@@ -2,11 +2,17 @@ import { useEffect, useRef } from "react";
 import HistoricalMessage from "./HistoricalMessage";
 
 // Flattens stored Q&A rows into a flat list of user/assistant bubbles.
-// Each chat row { prompt, response } → 2 messages on screen.
+// Each chat row { prompt, response, sources? } → 2 messages on screen.
+// sources are attached only to the assistant bubble.
 const rowsToMessages = (rows) =>
   rows.flatMap((row) => [
-    { id: `u-${row.id}`, role: "user", content: row.prompt },
-    { id: `a-${row.id}`, role: "assistant", content: row.response },
+    { id: `u-${row.id}`, role: "user", content: row.prompt, sources: [] },
+    {
+      id: `a-${row.id}`,
+      role: "assistant",
+      content: row.response,
+      sources: row.sources ?? [],
+    },
   ]);
 
 export default function ChatHistory({ rows, pendingPrompt, streamingText }) {
@@ -28,7 +34,12 @@ export default function ChatHistory({ rows, pendingPrompt, streamingText }) {
           </div>
         )}
         {messages.map((m) => (
-          <HistoricalMessage key={m.id} role={m.role} content={m.content} />
+          <HistoricalMessage
+            key={m.id}
+            role={m.role}
+            content={m.content}
+            sources={m.sources}
+          />
         ))}
         {isStreaming && (
           <>
