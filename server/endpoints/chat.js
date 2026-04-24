@@ -2,6 +2,7 @@ const { Router } = require("express");
 const { Workspace } = require("../models/workspace");
 const { WorkspaceChats } = require("../models/workspaceChats");
 const { WorkspaceDocument } = require("../models/workspaceDocument");
+const { Thread } = require("../models/thread");
 const { getProvider } = require("../utils/AiProviders");
 const { getEmbedder } = require("../utils/EmbeddingEngines");
 const { getVectorDb } = require("../utils/vectorDbProviders");
@@ -11,26 +12,20 @@ const logger = require("../utils/logger");
 const BASE_SYSTEM_PROMPT =
   "You are a helpful assistant. Answer concisely unless asked for detail.";
 const HISTORY_LIMIT = 20;
-const RAG_TOP_K = 4;         // how many chunks to inject per message
-const RAG_MIN_SCORE = 0.35;  // ignore chunks below this relevance threshold
+const RAG_TOP_K = 4;
+const RAG_MIN_SCORE = 0.35;
 
-// Convert stored Q&A rows into the OpenAI "messages" format.
 const historyToMessages = (history) =>
   history.flatMap((row) => [
     { role: "user", content: row.prompt },
     { role: "assistant", content: row.response },
   ]);
 
-// Build the system prompt.
-// If the workspace has documents and relevant chunks were found, inject them.
-// If no documents or no relevant chunks, returns the base prompt unchanged.
 function buildSystemPrompt(sources) {
   if (!sources || sources.length === 0) return BASE_SYSTEM_PROMPT;
-
   const context = sources
     .map((s, i) => `--- Source ${i + 1} ---\n${s.text}`)
     .join("\n\n");
-
   return (
     BASE_SYSTEM_PROMPT +
     "\n\nUse the following document context to answer the user's question. " +
@@ -39,24 +34,27 @@ function buildSystemPrompt(sources) {
   );
 }
 
-// Retrieve relevant chunks for a given workspace + user question.
-// Returns [] if the workspace has no documents or nothing scores high enough.
 async function retrieveSources(workspaceSlug, workspaceId, question) {
   try {
     const docCount = await WorkspaceDocument.countForWorkspace(workspaceId);
-    if (docCount === 0) return []; // skip embedding + DB lookup entirely
-
+    if (docCount === 0) return [];
     const embedder = await getEmbedder();
     const queryVector = await embedder.embedSingle(question);
     const vectorDb = getVectorDb();
     const results = await vectorDb.similaritySearch(workspaceSlug, queryVector, RAG_TOP_K);
-
     return results.filter((r) => r.score >= RAG_MIN_SCORE);
   } catch (err) {
-    // Retrieval failure must never break chat — graceful degrade to no-RAG.
     logger.warn(`RAG retrieval failed (continuing without context): ${err.message}`);
     return [];
   }
+}
+
+// Resolve an optional threadSlug from the request body.
+// Returns { threadId } — null if no thread was provided or thread wasn't found.
+async function resolveThread(threadSlug) {
+  if (!threadSlug) return { threadId: null };
+  const thread = await Thread.findBySlug(threadSlug);
+  return { threadId: thread?.id ?? null };
 }
 
 const chatEndpoints = (app) => {
@@ -64,10 +62,11 @@ const chatEndpoints = (app) => {
   router.use(validatedRequest);
 
   // POST /api/workspace/:slug/chat — non-streaming chat with RAG.
+  // Body: { message, threadSlug? }
   router.post("/:slug/chat", async (req, res) => {
     try {
       const { slug } = req.params;
-      const { message } = req.body ?? {};
+      const { message, threadSlug } = req.body ?? {};
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "message (string) required" });
       }
@@ -75,8 +74,10 @@ const chatEndpoints = (app) => {
       const workspace = await Workspace.findBySlug(slug);
       if (!workspace) return res.status(404).json({ error: "workspace not found" });
 
+      const { threadId } = await resolveThread(threadSlug);
+
       const [history, sources] = await Promise.all([
-        WorkspaceChats.getHistory(workspace.id, { limit: HISTORY_LIMIT }),
+        WorkspaceChats.getHistory(workspace.id, { limit: HISTORY_LIMIT, threadId }),
         retrieveSources(slug, workspace.id, message),
       ]);
 
@@ -92,6 +93,7 @@ const chatEndpoints = (app) => {
       const saved = await WorkspaceChats.addChat({
         workspaceId: workspace.id,
         userId: req.user.id,
+        threadId,
         prompt: message,
         response,
       });
@@ -109,7 +111,7 @@ const chatEndpoints = (app) => {
     }
   });
 
-  // GET /api/workspace/:slug/chats — full history.
+  // GET /api/workspace/:slug/chats — full workspace history (no thread filter).
   router.get("/:slug/chats", async (req, res) => {
     try {
       const workspace = await Workspace.findBySlug(req.params.slug);
@@ -122,13 +124,11 @@ const chatEndpoints = (app) => {
   });
 
   // POST /api/workspace/:slug/stream-chat — SSE streaming chat with RAG.
-  // Frames emitted:
-  //   data: {"type":"chunk","text":"hel"}
-  //   data: {"type":"done","id":42,"response":"hello","sources":[...],"createdAt":"..."}
-  //   data: {"type":"error","error":"..."}
+  // Body: { message, threadSlug? }
+  // Frames: chunk | done (with sources) | error
   router.post("/:slug/stream-chat", async (req, res) => {
     const { slug } = req.params;
-    const { message } = req.body ?? {};
+    const { message, threadSlug } = req.body ?? {};
 
     const send = (obj) => res.write(`data: ${JSON.stringify(obj)}\n\n`);
 
@@ -148,9 +148,10 @@ const chatEndpoints = (app) => {
         return res.end();
       }
 
-      // Retrieve RAG context + chat history in parallel.
+      const { threadId } = await resolveThread(threadSlug);
+
       const [history, sources] = await Promise.all([
-        WorkspaceChats.getHistory(workspace.id, { limit: HISTORY_LIMIT }),
+        WorkspaceChats.getHistory(workspace.id, { limit: HISTORY_LIMIT, threadId }),
         retrieveSources(slug, workspace.id, message),
       ]);
 
@@ -177,6 +178,7 @@ const chatEndpoints = (app) => {
       const saved = await WorkspaceChats.addChat({
         workspaceId: workspace.id,
         userId: req.user.id,
+        threadId,
         prompt: message,
         response: full,
       });
@@ -186,7 +188,6 @@ const chatEndpoints = (app) => {
         id: saved.id,
         response: saved.response,
         createdAt: saved.createdAt,
-        // Send sources so the frontend can render citations.
         sources: sources.map((s) => ({ text: s.text, score: s.score, docId: s.docId })),
       });
       res.end();
@@ -197,7 +198,7 @@ const chatEndpoints = (app) => {
     }
   });
 
-  // DELETE /api/workspace/:slug/chats — clear history.
+  // DELETE /api/workspace/:slug/chats — clear all workspace history (no thread).
   router.delete("/:slug/chats", async (req, res) => {
     try {
       const workspace = await Workspace.findBySlug(req.params.slug);

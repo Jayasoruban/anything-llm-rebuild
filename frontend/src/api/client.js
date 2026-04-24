@@ -66,6 +66,18 @@ export const documentApi = {
   },
 };
 
+export const threadApi = {
+  list: (slug) => api.get(`/workspace/${slug}/threads`),
+  create: (slug, name) => api.post(`/workspace/${slug}/threads`, { name }),
+  rename: (slug, threadSlug, name) =>
+    api.post(`/workspace/${slug}/threads/${threadSlug}`, { name }),
+  delete: (slug, threadSlug) => api.del(`/workspace/${slug}/threads/${threadSlug}`),
+  getHistory: (slug, threadSlug) =>
+    api.get(`/workspace/${slug}/threads/${threadSlug}/chats`),
+  clearHistory: (slug, threadSlug) =>
+    api.del(`/workspace/${slug}/threads/${threadSlug}/chats`),
+};
+
 export const adminApi = {
   // Users
   listUsers: () => api.get("/admin/users"),
@@ -98,7 +110,7 @@ export const chatApi = {
   //   { type: "done", id, response, createdAt }
   //   { type: "error", error }
   // Returns an AbortController so the caller can cancel (e.g. on logout).
-  stream: (slug, message, onEvent) => {
+  stream: (slug, message, onEvent, { threadSlug } = {}) => {
     const ctrl = new AbortController();
 
     const run = async () => {
@@ -109,7 +121,7 @@ export const chatApi = {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, threadSlug }),
         signal: ctrl.signal,
       });
       if (!res.ok) {

@@ -22,6 +22,7 @@ model User {
 
   chats          WorkspaceChat[]
   workspaces     WorkspaceUser[]
+  threads        Thread[]
   claimedInvites Invite[]        @relation("ClaimedInvites")
   createdInvites Invite[]        @relation("CreatedInvites")
 }
@@ -46,6 +47,7 @@ model Workspace {
   chats     WorkspaceChat[]
   documents WorkspaceDocument[]
   members   WorkspaceUser[]
+  threads   Thread[]
 }
 
 // Join table: which users have access to which workspaces.
@@ -77,6 +79,23 @@ model Invite {
   claimedBy User? @relation("ClaimedInvites", fields: [claimedById], references: [id], onDelete: SetNull)
 }
 
+// A named conversation inside a workspace.
+// Each user can have many threads per workspace — each thread has its own
+// isolated chat history. The slug (uuid) is used in API paths.
+model Thread {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  userId      Int?
+  name        String   @default("New Thread")
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  chats     WorkspaceChat[]
+}
+
 // One row = one uploaded document (metadata only — vectors live in LanceDB).
 model WorkspaceDocument {
   id          Int      @id @default(autoincrement())
@@ -94,16 +113,20 @@ model WorkspaceDocument {
 }
 
 // One row = one Q&A pair (user prompt + assistant response).
+// threadId is optional — chats without a thread belong to the workspace's "default" context.
 model WorkspaceChat {
   id          Int      @id @default(autoincrement())
   workspaceId Int
   userId      Int?
+  threadId    Int?
   prompt      String
   response    String
   createdAt   DateTime @default(now())
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  thread    Thread?   @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
+  @@index([threadId])
 }
