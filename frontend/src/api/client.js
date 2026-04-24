@@ -66,6 +66,53 @@ export const documentApi = {
   },
 };
 
+export const agentApi = {
+  // SSE stream — same shape as chatApi.stream but uses the agent endpoint.
+  // Returns { abort, promise }.
+  stream: (slug, message, onEvent, { threadSlug } = {}) => {
+    const ctrl = new AbortController();
+
+    const run = async () => {
+      const token = Token.get();
+      const res = await fetch(`/api/workspace/${slug}/agent-chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ message, threadSlug }),
+        signal: ctrl.signal,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error ?? `HTTP ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const parts = buf.split("\n\n");
+        buf = parts.pop() ?? "";
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith("data:")) continue;
+          try { onEvent(JSON.parse(line.slice(5).trim())); } catch { /* ignore */ }
+        }
+      }
+    };
+
+    const promise = run().catch((err) => {
+      if (err.name !== "AbortError") onEvent({ type: "error", error: err.message });
+    });
+
+    return { abort: () => ctrl.abort(), promise };
+  },
+};
+
 export const threadApi = {
   list: (slug) => api.get(`/workspace/${slug}/threads`),
   create: (slug, name) => api.post(`/workspace/${slug}/threads`, { name }),

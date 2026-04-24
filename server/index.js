@@ -17,6 +17,7 @@ const { systemSettingsEndpoints } = require("./endpoints/systemSettings");
 const { documentEndpoints } = require("./endpoints/document");
 const { adminEndpoints } = require("./endpoints/admin");
 const { threadEndpoints } = require("./endpoints/thread");
+const { agentEndpoints } = require("./endpoints/agent");
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
@@ -46,6 +47,7 @@ systemSettingsEndpoints(app);
 documentEndpoints(app);
 adminEndpoints(app);
 threadEndpoints(app);
+agentEndpoints(app);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Not found", path: req.path });
