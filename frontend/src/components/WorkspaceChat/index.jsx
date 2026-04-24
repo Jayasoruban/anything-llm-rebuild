@@ -39,13 +39,22 @@ export default function WorkspaceChat({ slug }) {
             📄 Documents
           </button>
           {user?.role === "admin" && (
-            <Link
-              to="/settings/llm"
-              className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 transition"
-              title="LLM settings"
-            >
-              ⚙ Settings
-            </Link>
+            <>
+              <Link
+                to="/settings/users"
+                className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 transition"
+                title="User management"
+              >
+                👥 Users
+              </Link>
+              <Link
+                to="/settings/llm"
+                className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 transition"
+                title="LLM settings"
+              >
+                ⚙ Settings
+              </Link>
+            </>
           )}
           <button
             onClick={handleLogout}

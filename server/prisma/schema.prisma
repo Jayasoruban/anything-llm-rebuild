@@ -15,15 +15,18 @@ model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
   password  String
-  role      String   @default("default")
+  role      String   @default("default")   // "admin" | "default"
+  suspended Boolean  @default(false)       // admin can lock a user out
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  chats WorkspaceChat[]
+  chats          WorkspaceChat[]
+  workspaces     WorkspaceUser[]
+  claimedInvites Invite[]        @relation("ClaimedInvites")
+  createdInvites Invite[]        @relation("CreatedInvites")
 }
 
 // Global app settings (key-value store).
-// Examples: has_setup_completed, jwt_secret.
 model SystemSettings {
   id        Int      @id @default(autoincrement())
   label     String   @unique
@@ -33,7 +36,6 @@ model SystemSettings {
 }
 
 // A chat container. One workspace groups many related Q&A pairs.
-// Phase 1 uses a single seeded "default" workspace.
 model Workspace {
   id        Int      @id @default(autoincrement())
   name      String
@@ -43,21 +45,50 @@ model Workspace {
 
   chats     WorkspaceChat[]
   documents WorkspaceDocument[]
+  members   WorkspaceUser[]
+}
+
+// Join table: which users have access to which workspaces.
+// Admin bypasses this check and always has access to all workspaces.
+model WorkspaceUser {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  workspaceId Int
+  createdAt   DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+// One-time-use invite tokens. Admin generates → shares URL → user registers.
+model Invite {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique   // uuid — used in the invite URL
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  createdById Int
+  claimedById Int?
+
+  createdBy User  @relation("CreatedInvites", fields: [createdById], references: [id], onDelete: Cascade)
+  claimedBy User? @relation("ClaimedInvites", fields: [claimedById], references: [id], onDelete: SetNull)
 }
 
 // One row = one uploaded document (metadata only — vectors live in LanceDB).
-// docId links SQL metadata ↔ LanceDB vector rows for the same document.
 model WorkspaceDocument {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   workspaceId Int
-  docId       String    @unique   // uuid generated at upload time
-  title       String              // original filename
+  docId       String   @unique
+  title       String
   mimeType    String
   wordCount   Int
   chunkCount  Int
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
 
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
 }

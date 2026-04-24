@@ -66,6 +66,20 @@ export const documentApi = {
   },
 };
 
+export const adminApi = {
+  // Users
+  listUsers: () => api.get("/admin/users"),
+  suspendUser: (id) => api.post(`/admin/users/${id}/suspend`),
+  unsuspendUser: (id) => api.post(`/admin/users/${id}/unsuspend`),
+  changeRole: (id, role) => api.post(`/admin/users/${id}/role`, { role }),
+  deleteUser: (id) => api.del(`/admin/users/${id}`),
+
+  // Invites
+  createInvite: () => api.post("/admin/invites"),
+  listInvites: () => api.get("/admin/invites"),
+  deleteInvite: (id) => api.del(`/admin/invites/${id}`),
+};
+
 export const settingsApi = {
   getLLM: () => api.get("/system-settings/llm-provider"),
   saveLLM: ({ provider, apiKey, model }) =>

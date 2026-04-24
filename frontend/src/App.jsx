@@ -4,6 +4,8 @@ import Setup from "./pages/Setup";
 import Login from "./pages/Login";
 import Workspace from "./pages/Workspace";
 import LLMPreference from "./pages/Settings/LLMPreference";
+import UserManagement from "./pages/Settings/UserManagement";
+import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const PublicOnly = ({ children }) => {
@@ -56,6 +58,15 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/settings/users"
+        element={
+          <ProtectedRoute>
+            <UserManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/register" element={<Register />} />
       <Route path="/" element={<Navigate to="/workspace/default" replace />} />
       <Route path="*" element={<Navigate to="/workspace/default" replace />} />
     </Routes>
