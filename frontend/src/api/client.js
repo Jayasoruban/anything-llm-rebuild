@@ -6,12 +6,18 @@ export const Token = {
   clear: () => localStorage.removeItem(TOKEN_KEY),
 };
 
+// In production on Railway, VITE_API_BASE_URL is set to the server's public URL
+// (e.g. https://server-xxx.up.railway.app) so the browser hits the server directly
+// instead of going through the Nginx proxy — removing one full network round-trip.
+// In local dev it's empty so relative paths (/api/...) work via Vite's proxy.
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
 const request = async (method, path, body) => {
   const headers = { "Content-Type": "application/json" };
   const token = Token.get();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}/api${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -55,7 +61,7 @@ export const documentApi = {
     const token = Token.get();
     const body = new FormData();
     body.append("file", file);
-    const res = await fetch(`/api/workspace/${slug}/upload`, {
+    const res = await fetch(`${API_BASE}/api/workspace/${slug}/upload`, {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body,
@@ -74,7 +80,7 @@ export const agentApi = {
 
     const run = async () => {
       const token = Token.get();
-      const res = await fetch(`/api/workspace/${slug}/agent-chat`, {
+      const res = await fetch(`${API_BASE}/api/workspace/${slug}/agent-chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -162,7 +168,7 @@ export const chatApi = {
 
     const run = async () => {
       const token = Token.get();
-      const res = await fetch(`/api/workspace/${slug}/stream-chat`, {
+      const res = await fetch(`${API_BASE}/api/workspace/${slug}/stream-chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
