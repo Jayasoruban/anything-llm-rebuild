@@ -1,10 +1,12 @@
-FROM node:20-alpine
+# node:20-slim is Debian-based (glibc) — NOT Alpine (musl).
+# LanceDB's musl binary requires AVX-512 CPU instructions which most cloud VMs
+# (including Railway) don't support. The glibc Debian binary has no such requirement.
+FROM node:20-slim
 
-# Build tools required for native modules:
-#   LanceDB  — compiled from Rust/C++ bindings
-#   bcrypt   — compiled from C++
-#   openssl  — needed by Prisma on Alpine
-RUN apk add --no-cache python3 make g++ openssl
+# Build tools for native modules (bcrypt, LanceDB)
+# python3 + make + g++ → compile native addons if no pre-built binary exists
+# openssl → required by Prisma on Debian slim
+RUN apt-get update && apt-get install -y python3 make g++ openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
