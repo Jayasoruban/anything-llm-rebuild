@@ -74,6 +74,13 @@ export default function WorkspaceChat({ slug }) {
                 👥 Users
               </Link>
               <Link
+                to="/settings/mcp"
+                className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 transition"
+                title="MCP servers"
+              >
+                🔌 MCP
+              </Link>
+              <Link
                 to="/settings/llm"
                 className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 transition"
                 title="LLM settings"

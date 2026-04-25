@@ -1,0 +1,60 @@
+services:
+
+  # ── Document parser (internal only — not exposed to internet) ────────────────
+  collector:
+    build:
+      context: .
+      dockerfile: collector/Dockerfile
+    restart: unless-stopped
+    environment:
+      COLLECTOR_PORT: 8888
+      NODE_ENV: production
+    networks:
+      - internal
+
+  # ── Express API + Prisma + LanceDB + Agent ───────────────────────────────────
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./server/.env           # All secrets loaded from here — never committed
+    environment:
+      NODE_ENV: production
+      COLLECTOR_URL: http://collector:8888
+    volumes:
+      # SQLite DB + LanceDB vector files persist here across restarts
+      - app_data:/app/server/storage
+    depends_on:
+      - collector
+    networks:
+      - internal
+
+  # ── React SPA served by Nginx ────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Nginx proxies /api/* to this URL internally.
+      # "server" = Docker Compose service name resolved via internal network.
+      BACKEND_URL: http://server:3001
+    ports:
+      - "80:80"                 # Only port exposed to the internet
+    depends_on:
+      - server
+    networks:
+      - internal
+
+# ── Persistent volume ─────────────────────────────────────────────────────────
+volumes:
+  app_data:                     # Survives docker compose down (not docker compose down -v)
+
+# ── Internal bridge network ───────────────────────────────────────────────────
+# Containers talk to each other by service name (collector, server, frontend).
+# Nothing is reachable from outside except port 80 on frontend.
+networks:
+  internal:
+    driver: bridge

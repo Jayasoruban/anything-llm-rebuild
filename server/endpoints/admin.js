@@ -4,6 +4,7 @@ const { Invite } = require("../models/invite");
 const { WorkspaceUser } = require("../models/workspaceUser");
 const { Workspace } = require("../models/workspace");
 const { validatedRequest, requireAdmin, publicUser } = require("../utils/auth");
+const { mcpManager } = require("../utils/McpClient");
 const logger = require("../utils/logger");
 
 const adminEndpoints = (app) => {
@@ -151,6 +152,20 @@ const adminEndpoints = (app) => {
       await WorkspaceUser.remove(parseInt(userId), workspace.id);
       logger.info(`[admin] removed user ${userId} from workspace ${slug}`);
       res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── MCP status ───────────────────────────────────────────────────────────────
+
+  // GET /api/admin/mcp/servers
+  // Returns the connection status and available tools for every configured MCP server.
+  // Used by the admin MCP settings page to show what's connected and what tools exist.
+  router.get("/mcp/servers", (_req, res) => {
+    try {
+      const servers = mcpManager.getStatus();
+      res.json({ servers });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }

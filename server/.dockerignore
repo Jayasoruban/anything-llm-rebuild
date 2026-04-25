@@ -1,0 +1,7 @@
+node_modules
+storage
+.env
+*.log
+scripts/
+prisma/dev.db
+prisma/dev.db-journal

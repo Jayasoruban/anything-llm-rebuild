@@ -112,11 +112,18 @@ export default function ChatContainer({ slug, activeThread }) {
           setStreamingText((prev) => prev + evt.text);
         } else if (evt.type === "done") {
           setAgentThinking(false);
+          // If no chunks arrived (thought-only response), use done's response text.
+          if (evt.response && !agentResponseRef.current) {
+            agentResponseRef.current = evt.response;
+            setStreamingText(evt.response);
+          }
         } else if (evt.type === "saved") {
           // Use ref value — NOT streamingText (stale closure).
+          // Fall back to evt.response if ref is still empty (edge case).
+          const finalResponse = agentResponseRef.current || evt.response || "";
           setRows((prev) => [
             ...prev,
-            { id: evt.id, prompt: message, response: agentResponseRef.current, createdAt: evt.createdAt, sources: [] },
+            { id: evt.id, prompt: message, response: finalResponse, createdAt: evt.createdAt, sources: [] },
           ]);
           setPendingPrompt(null);
           setStreamingText("");

@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Workspace from "./pages/Workspace";
 import LLMPreference from "./pages/Settings/LLMPreference";
 import UserManagement from "./pages/Settings/UserManagement";
+import MCPServers from "./pages/Settings/MCPServers";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -63,6 +64,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <UserManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings/mcp"
+        element={
+          <ProtectedRoute>
+            <MCPServers />
           </ProtectedRoute>
         }
       />

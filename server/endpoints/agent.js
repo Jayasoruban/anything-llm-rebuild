@@ -97,23 +97,22 @@ const agentEndpoints = (app) => {
 
       if (aborted) return;
 
-      // Save the final answer to chat history (same table as regular chat).
-      if (fullResponse) {
-        const saved = await WorkspaceChats.addChat({
-          workspaceId: workspace.id,
-          userId: req.user.id,
-          threadId,
-          prompt: message,
-          response: fullResponse,
-        });
-
-        // Re-emit done with DB id so frontend can reference it.
-        send({
-          type: "saved",
-          id: saved.id,
-          createdAt: saved.createdAt,
-        });
-      }
+      // Always save to DB and emit "saved" — even if response is empty.
+      // This is critical: the frontend only clears the pending state on "saved".
+      // If we skip it, the chat stays in a permanent "thinking" spinner.
+      const saved = await WorkspaceChats.addChat({
+        workspaceId: workspace.id,
+        userId: req.user.id,
+        threadId,
+        prompt: message,
+        response: fullResponse || "(agent produced no text response)",
+      });
+      send({
+        type: "saved",
+        id: saved.id,
+        createdAt: saved.createdAt,
+        response: fullResponse,
+      });
 
       res.end();
     } catch (err) {

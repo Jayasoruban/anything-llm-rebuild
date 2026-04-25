@@ -18,6 +18,7 @@ const { documentEndpoints } = require("./endpoints/document");
 const { adminEndpoints } = require("./endpoints/admin");
 const { threadEndpoints } = require("./endpoints/thread");
 const { agentEndpoints } = require("./endpoints/agent");
+const { mcpManager } = require("./utils/McpClient");
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
@@ -60,5 +61,12 @@ app.listen(PORT, async () => {
   } catch (err) {
     logger.error(`failed to seed default workspace: ${err.message}`);
   }
+
+  // Connect to all MCP servers defined in MCP_SERVERS env var.
+  // This runs in the background — server starts immediately, MCP connects after.
+  mcpManager.connectAll().catch((err) =>
+    logger.error(`MCP setup failed: ${err.message}`)
+  );
+
   logger.info(`✓ server listening on http://localhost:${PORT}`);
 });
