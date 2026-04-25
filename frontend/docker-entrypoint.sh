@@ -17,7 +17,10 @@
 
 set -e
 
-BACKEND_URL=${BACKEND_URL:-http://server:3001}
+# export is REQUIRED — envsubst runs as a child process and can only see
+# exported environment variables. Without export, ${BACKEND_URL:-default} sets
+# a local shell variable that envsubst cannot read, producing an empty proxy_pass.
+export BACKEND_URL="${BACKEND_URL:-http://server.railway.internal:3001}"
 
 echo "[entrypoint] BACKEND_URL = ${BACKEND_URL}"
 
